@@ -118,7 +118,7 @@ func (pm *Pm) Factorize(A *sparse.Matrix, config *Config, ignore ...int) (err er
 			_ = et.Add(fmt.Errorf("matrix columns A is valid: %v", columns))
 		}
 		if A.IsTriplet() {
-	 	_ = et.Add(fmt.Errorf("matrix A is not CSC(Compressed Sparse Column) format"))
+			_ = et.Add(fmt.Errorf("matrix A is not CSC(Compressed Sparse Column) format"))
 		}
 	}
 
@@ -146,6 +146,14 @@ func (pm *Pm) Factorize(A *sparse.Matrix, config *Config, ignore ...int) (err er
 		}
 	}()
 
+	// minimal configuration
+	if config == nil {
+		config = &Config{
+			IterationMax: 500,
+			Tolerance:    1e-5,
+		}
+	}
+
 	// remove duplicate from `ignore` list
 	if len(ignore) > 0 {
 		list := append([]int{}, ignore[0])
@@ -156,89 +164,15 @@ func (pm *Pm) Factorize(A *sparse.Matrix, config *Config, ignore ...int) (err er
 			list = append(list, ignore[i])
 		}
 		list, ignore = ignore, list
-		//	cs_free(list)
 	}
 
 	// coping matrix A without ignored rows and columns
 	C, _ := A.Copy()
-// if len(ignore) > 0 {
-// 	_, err := sparse.Fkeep(C, func(i, j int, x float64) bool {
-// 		var found bool
-// 		for k := range ignore {
-// 			if i == ignore[k] || j == ignore[k] {
-// 				found = true
-// 				break
-// 			}
-// 		}
-// 		return !found // if not found , then keep value
-// 	})
-// 	if err != nil {
-// 		return err
-// 	}
-// 
-// 	// remove empty column
-// 	// var pnew []int
-// 	// for j := 0; j < C.n; j++ {
-// 	// 	var found bool
-// 	// 	for k := range ignore {
-// 	// 		if j == ignore[k] {
-// 	// 			found = true
-// 	// 			break
-// 	// 		}
-// 	// 	}
-// 	// 	if found {
-// 	// 		continue
-// 	// 	}
-// 	// 	pnew = append(pnew, C.p[j])
-// 	// }
-// 	// C.p = append(pnew, C.p[C.n])
-// 
-// 	// recalculate amount rows and columns
-// 	// C.n -= len(ignore)
-// 	// C.m -= len(ignore)
-// 
-// 	// // recalculate vector i
-// 	// for j := 0; j < C.n; j++ {
-// 	// 	for p := C.p[j]; p < C.p[j+1]; p++ {
-// 	// 		incr := 0
-// 	// 		for k := range ignore {
-// 	// 			if C.i[p] > ignore[k] {
-// 	// 				incr++
-// 	// 			}
-// 	// 		}
-// 	// 		C.i[p] -= incr
-// 	// 	}
-// 	// }
-// }
-
-	// minimal configuration
-	if config == nil {
-		config = &Config{
-			IterationMax: 500,
-			Tolerance:    1e-5,
-		}
-	}
 
 	// store
 	pm.ignore = ignore
 	pm.a = C
 	pm.config = *config
-
-	// matrix A must have diagonal element
-	// for j := 0; j < pm.a.n; j++ {
-	// 	found := false
-	// 	for p := pm.a.p[j]; p < pm.a.p[j+1]; p++ {
-	// 		if j != pm.a.i[p] {
-	// 			continue
-	// 		}
-	// 		// only diagonal element
-	// 		found = true
-	// 	}
-	// 	if !found {
-	// 		// diagonal element is not found in that column
-	// 		pm.a.inject(j, j, 0.0)
-	// 	}
-	// }
 
 	return
 }
@@ -260,8 +194,8 @@ func (pm *Pm) Eigen() (err error) {
 	// workspace
 	var (
 		rows, cols = pm.a.Dims()
-		x          = make([]float64, rows) // len(pm.ignore))
-		xNext      = make([]float64, rows) // len(pm.ignore))
+		x          = make([]float64, rows)
+		xNext      = make([]float64, rows)
 	)
 	_ = cols
 	x = x[:rows]
@@ -287,10 +221,13 @@ func (pm *Pm) Eigen() (err error) {
 		//          part1               part 2
 		// where j = 0 ... k-1
 		oneMax(x)
-		for _, i := range pm.ignore{
+		for _, i := range pm.ignore {
 			x[i] = 0.0
 		}
 		zeroize(xNext)
+		for _, i := range pm.ignore {
+			xNext[i] = 0.0
+		}
 		_, _ = sparse.Fkeep(pm.a, func(i, j int, val float64) bool {
 			xNext[i] += val * x[j]
 			return true
@@ -298,12 +235,7 @@ func (pm *Pm) Eigen() (err error) {
 
 		// value pm.E.X without ignore elements
 		EX := make([]float64, rows)
-		if len(pm.ignore) == 0 { // ignore list is empty
-			copy(EX, pm.𝑿)
-		} else {
-			// TODO (KI)
-			// panic("TODO")
-		}
+		copy(EX, pm.𝑿)
 		for row := 0; row < rows; row++ {
 			for col := 0; col < rows; col++ {
 				xNext[row] -= pm.𝜦 * EX[row] * EX[col] * x[col]
@@ -374,33 +306,6 @@ func (pm *Pm) Eigen() (err error) {
 
 	// calculation eigenvalue
 	𝛌 := up / down
-
-	// change workspace with length of ignore list
-	//  x = append(x, make([]float64, len(pm.ignore))...)
-
-	// ignore list
-// if len(pm.ignore) > 0 {
-// 	// decomperess vector `x`
-// 	// short x vector: x = [1 2]
-// 	// ignore list   :     [0 2 4]
-// 	// result        : x = [0 1 0 2 0]
-// 	counter := 0
-// 	for i := len(x) - 1; i >= 0; i-- {
-// 		var found bool
-// 		for k := range pm.ignore {
-// 			if i == pm.ignore[k] {
-// 				found = true
-// 				break
-// 			}
-// 		}
-// 		if found {
-// 			x[i] = 0
-// 			continue
-// 		}
-// 		counter++
-// 		x[i] = x[len(x)-len(pm.ignore)-counter]
-// 	}
-// }
 
 	oneMax(x)
 
