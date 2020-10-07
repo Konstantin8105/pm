@@ -234,7 +234,6 @@ func (pm *Pm) Eigen() (err error) {
 
 	// up : Ax · x
 	iteration()
-
 	var up float64
 	for i := range x {
 		up += x[i] * xNext[i]
@@ -251,13 +250,8 @@ func (pm *Pm) Eigen() (err error) {
 		return fmt.Errorf("Not acceptable value")
 	}
 
-	// calculation eigenvalue
-	𝛌 := up / down
-
-	oneMax(x)
-
-	pm.𝜦 = 𝛌 // eigenvalue
-	pm.𝑿 = x // eigenvector
+	pm.𝜦 = up / down // eigenvalue
+	pm.𝑿 = x         // eigenvector
 
 	return
 }
