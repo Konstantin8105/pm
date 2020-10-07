@@ -360,14 +360,6 @@ func TestPm(t *testing.T) {
 		var pm Pm
 		_ = pm.Factorize(A, nil)
 	})
-	t.Run("oneMax: error", func(t *testing.T) {
-		defer func() {
-			if r := recover(); r != nil {
-				t.Fatalf("Not valid")
-			}
-		}()
-		oneMax(nil)
-	})
 	t.Run("A is nil", func(t *testing.T) {
 		var pm Pm
 		err := pm.Factorize(nil, nil)

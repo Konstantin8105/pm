@@ -44,37 +44,18 @@ func zeroize(x []float64) {
 
 // oneMax - modify slice with max value 1.0
 func oneMax(x []float64) {
-	// check input data
-	// if len(x) == 0 {
-	// 	return
-	// }
-
 	// find max value
-	max := x[0]
-	min := x[0]
+	max, min := x[0], x[0]
 	for i := range x {
-		if min < x[i] && x[i] < max {
-			continue
-		} else if x[i] < min {
+		if x[i] < min {
 			min = x[i]
 		} else if max < x[i] {
 			max = x[i]
 		}
 	}
-	if math.Abs(min) > max {
+	if max < math.Abs(min) {
 		max = min
 	}
-	// if max == 1.0 {
-	// 	return
-	// }
-	//
-	// if max == 66.66 , then max = 100
-	// if max == 0.006 , then max = 0.01
-	// if max > 0 {
-	// 	max = math.Pow(10.0, float64(int(math.Log10(max))))
-	// } else {
-	// 	max = -math.Pow(10.0, float64(int(math.Log10(-max))))
-	// }
 
 	// modification
 	for i := range x {
@@ -161,7 +142,7 @@ func (pm *Pm) Factorize(A *sparse.Matrix, config *Config, ignore ...int) (err er
 			}
 			list = append(list, ignore[i])
 		}
-		list, ignore = ignore, list
+		ignore = list
 	}
 
 	// store
@@ -193,66 +174,35 @@ func (pm *Pm) Eigen() (err error) {
 		xNext      = make([]float64, rows)
 	)
 	_ = cols
-	x = x[:rows]
-	xNext = xNext[:rows]
 
 	rand.Seed(time.Now().UnixNano())
 
+	// prepare x
 	for i := range x {
 		x[i] = rand.Float64() - 0.5
 	}
-
-	dlast := 1.0
 	oneMax(x)
-
-	// iteration value
-	var iter uint64
-
-	EX := make([]float64, rows)
 
 	// main iteration function
 	iteration := func() {
-		// x(k) = A*x(k-1) - (∑(𝛌(j)*[x(j)]*[x(j)Transpose])) * x(k-1),
-		//        |      |   |                                       |
-		//        +------+   +---------------------------------------+
-		//          part1               part 2
-		// where j = 0 ... k-1
 		oneMax(x)
 		for _, i := range pm.ignore {
 			x[i] = 0.0
 		}
 		zeroize(xNext)
-		for _, i := range pm.ignore {
-			xNext[i] = 0.0
-		}
-		// _, _ = sparse.Fkeep(pm.a, func(i, j int, val float64) bool {
-		// 	xNext[i] += val * x[j]
-		// 	return true
-		// })
 		_ = sparse.Gaxpy(pm.a, x, xNext, true)
-
-		// value pm.E.X without ignore elements
-		copy(EX, pm.𝑿)
-		for row := 0; row < rows; row++ {
-			for col := 0; col < rows; col++ {
-				xNext[row] -= pm.𝜦 * EX[row] * EX[col] * x[col]
-			}
-		}
-
-		// post work
 		x, xNext = xNext, x
 	}
 
 	// calculation
+	dlast := 1.0
+	var iter uint64
 	for {
 		// main iteration function
-		oneMax(x)
 		iteration()
 
 		// first norm of vector
 		// link: https://en.wikipedia.org/wiki/Norm_(mathematics)#Taxicab_norm_or_Manhattan_norm
-		oneMax(x)
-		oneMax(xNext)
 		var d float64
 		for i := range x {
 			d += math.Abs(x[i] - xNext[i])
