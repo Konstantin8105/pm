@@ -166,12 +166,9 @@ func (pm *Pm) Factorize(A *sparse.Matrix, config *Config, ignore ...int) (err er
 		list, ignore = ignore, list
 	}
 
-	// coping matrix A without ignored rows and columns
-	C, _ := A.Copy()
-
 	// store
 	pm.ignore = ignore
-	pm.a = C
+	pm.a = A
 	pm.config = *config
 
 	return
