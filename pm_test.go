@@ -55,56 +55,56 @@ import (
 // 	// Output:
 // }
 
-// func BenchmarkPM(b *testing.B) {
-// 	T, err := NewTriplet()
-// 	if err != nil {
-// 		panic(err)
-// 	}
-// 	// storage
-// 	errs := []error{
-// 		Entry(T, 0, 3, 0.9090),
-// 		Entry(T, 0, 4, 0.0910),
-//
-// 		Entry(T, 1, 0, 0.0002),
-// 		Entry(T, 1, 2, 0.9998),
-//
-// 		Entry(T, 2, 1, 0.9998),
-// 		Entry(T, 2, 3, 0.0002),
-//
-// 		Entry(T, 3, 0, 0.6690),
-// 		Entry(T, 3, 4, 0.3310),
-//
-// 		Entry(T, 4, 0, 0.9989),
-// 		Entry(T, 4, 1, 0.0011),
-// 	}
-// 	for i := range errs {
-// 		if errs[i] != nil {
-// 			panic(errs[i])
-// 		}
-// 	}
-//
-// 	// compress
-// 	A, err := Compress(T)
-// 	if err != nil {
-// 		panic(err)
-// 	}
-//
-// 	for i := 0; i < b.N; i++ {
-// 		var pm Pm
-// 		err = pm.Factorize(A, &Config{
-// 			IterationMax: 1000000000,
-// 			Tolerance:    1e-6,
-// 		})
-// 		if err != nil {
-// 			panic(err)
-// 		}
-//
-// 		err = pm.Eigen()
-// 		if err != nil {
-// 			panic(err)
-// 		}
-// 	}
-// }
+func BenchmarkPM(b *testing.B) {
+	T, err := sparse.NewTriplet()
+	if err != nil {
+		panic(err)
+	}
+	// storage
+	errs := []error{
+		sparse.Entry(T, 0, 3, 0.9090),
+		sparse.Entry(T, 0, 4, 0.0910),
+
+		sparse.Entry(T, 1, 0, 0.0002),
+		sparse.Entry(T, 1, 2, 0.9998),
+
+		sparse.Entry(T, 2, 1, 0.9998),
+		sparse.Entry(T, 2, 3, 0.0002),
+
+		sparse.Entry(T, 3, 0, 0.6690),
+		sparse.Entry(T, 3, 4, 0.3310),
+
+		sparse.Entry(T, 4, 0, 0.9989),
+		sparse.Entry(T, 4, 1, 0.0011),
+	}
+	for i := range errs {
+		if errs[i] != nil {
+			panic(errs[i])
+		}
+	}
+
+	// compress
+	A, err := sparse.Compress(T)
+	if err != nil {
+		panic(err)
+	}
+
+	for i := 0; i < b.N; i++ {
+		var pm Pm
+		err = pm.Factorize(A, &Config{
+			IterationMax: 1000000000,
+			Tolerance:    1e-6,
+		})
+		if err != nil {
+			panic(err)
+		}
+
+		err = pm.Eigen()
+		if err != nil {
+			panic(err)
+		}
+	}
+}
 
 func TestPm(t *testing.T) {
 	// tolerance

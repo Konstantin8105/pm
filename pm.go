@@ -45,9 +45,9 @@ func zeroize(x []float64) {
 // oneMax - modify slice with max value 1.0
 func oneMax(x []float64) {
 	// check input data
-	if len(x) == 0 {
-		return
-	}
+	// if len(x) == 0 {
+	// 	return
+	// }
 
 	// find max value
 	max := x[0]
@@ -55,11 +55,9 @@ func oneMax(x []float64) {
 	for i := range x {
 		if min < x[i] && x[i] < max {
 			continue
-		}
-		if x[i] < min {
+		} else if x[i] < min {
 			min = x[i]
-		}
-		if x[i] > max {
+		} else if max < x[i] {
 			max = x[i]
 		}
 	}
@@ -210,6 +208,8 @@ func (pm *Pm) Eigen() (err error) {
 	// iteration value
 	var iter uint64
 
+	EX := make([]float64, rows)
+
 	// main iteration function
 	iteration := func() {
 		// x(k) = A*x(k-1) - (∑(𝛌(j)*[x(j)]*[x(j)Transpose])) * x(k-1),
@@ -225,13 +225,13 @@ func (pm *Pm) Eigen() (err error) {
 		for _, i := range pm.ignore {
 			xNext[i] = 0.0
 		}
-		_, _ = sparse.Fkeep(pm.a, func(i, j int, val float64) bool {
-			xNext[i] += val * x[j]
-			return true
-		})
+		// _, _ = sparse.Fkeep(pm.a, func(i, j int, val float64) bool {
+		// 	xNext[i] += val * x[j]
+		// 	return true
+		// })
+		_ = sparse.Gaxpy(pm.a, x, xNext, true)
 
 		// value pm.E.X without ignore elements
-		EX := make([]float64, rows)
 		copy(EX, pm.𝑿)
 		for row := 0; row < rows; row++ {
 			for col := 0; col < rows; col++ {
